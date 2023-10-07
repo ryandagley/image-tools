@@ -2,6 +2,9 @@ from PIL import Image, ImageTk
 import os
 import tkinter as tk
 
+# Set the scale factor for thumbnail size (X% of original size)
+scale_factor = 0.1  # 10%
+
 # Define the image splitting function
 def split_and_save(image_path, output_folder, root):
     try:
@@ -90,14 +93,20 @@ def select_and_process_image():
 
     x = 10
     y = 10
-    thumbnail_width = 100
-    thumbnail_height = 100
+
     num_columns = 6  # Number of columns for thumbnail layout
 
     for filename in os.listdir(folder_path):
         if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
             image = Image.open(os.path.join(folder_path, filename))
+
+            # Calculate the new thumbnail size based on the scale factor
+            thumbnail_width = int(image.width * scale_factor)
+            thumbnail_height = int(image.height * scale_factor)
+
+            # Resize the image
             image.thumbnail((thumbnail_width, thumbnail_height))
+
             photo = ImageTk.PhotoImage(image)
             images.append(filename)
             image_canvas.create_image(x, y, image=photo, anchor=tk.NW, tags=(filename,))
