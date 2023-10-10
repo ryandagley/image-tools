@@ -64,13 +64,23 @@ def select_and_process_image():
     thumbnail_height = 0
 
     def select_image(event):
-        nonlocal selected_thumbnail, thumbnail_img, thumbnail_width, thumbnail_height
+        nonlocal selected_thumbnail, thumbnail_img, thumbnail_width, thumbnail_height, selected_image_path
         # Get the closest item (image) to the click event
         closest_item = image_canvas.find_closest(event.x, event.y)
         if closest_item:
             selected_index = images.index(image_canvas.gettags(closest_item)[0])
             selected_image = images[selected_index]
-            nonlocal selected_image_path
+
+            if selected_thumbnail == closest_item:
+                # Deselect and unhighlight if the same thumbnail is clicked again
+                selected_thumbnail = None
+                thumbnail_img = None
+                thumbnail_width = 0
+                thumbnail_height = 0
+                selected_image_path = None
+                image_canvas.delete("highlight")
+                return
+
             selected_image_path = os.path.join(folder_path, selected_image)
             thumbnail_img = Image.open(selected_image_path)
 
