@@ -2,156 +2,154 @@ from PIL import Image, ImageTk
 import os
 import tkinter as tk
 
-# Set the scale factor for thumbnail size (X% of original size)
-scale_factor = 0.1  # 10%
+class ImageSplitterApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Image Selector")
+        
+        # Set the folder path to the "images" folder in the same directory as the script
+        self.folder_path = os.path.join(os.path.dirname(__file__), "images")
 
-# Define the image splitting function
-def split_and_save(image_path, output_folder, root):
-    try:
-        # Open the selected image file
-        original_image = Image.open(image_path)
+        # Set the initial window size
+        self.root.geometry("800x600")
 
-        # Get the dimensions of the image
-        width, height = original_image.size
+        self.selected_image_path = None
+        self.selected_thumbnail = None
+        self.thumbnail_img = None
+        self.thumbnail_width = 0
+        self.thumbnail_height = 0
 
-        # Calculate half-width and half-height
-        half_width, half_height = width // 2, height // 2
+        self.create_widgets()
 
-        # Define the quadrant coordinates
-        quadrants = [
-            (0, 0, half_width, half_height),
-            (half_width, 0, width, half_height),
-            (0, half_height, half_width, height),
-            (half_width, half_height, width, height),
-        ]
+    def create_widgets(self):
+        self.image_canvas = tk.Canvas(self.root, width=800, height=600)
+        self.image_canvas.pack()
 
-        # Create the "output" directory if it doesn't exist
-        os.makedirs(output_folder, exist_ok=True)
+        self.images = []
 
-        # Get the filename without extension
-        filename_without_extension = os.path.splitext(os.path.basename(image_path))[0]
+        x = 10
+        y = 10
 
-        # Split and save each quadrant
-        for i, quadrant_coords in enumerate(quadrants):
-            quadrant_image = original_image.crop(quadrant_coords)
-            output_filename = f"{filename_without_extension}_quadrant_{i + 1}.png"
-            output_path = os.path.join(output_folder, output_filename)
-            quadrant_image.save(output_path, "PNG")
+        num_columns = 6  # Number of columns for thumbnail layout
 
-        print(f"Image '{image_path}' split successfully!")
+        for filename in os.listdir(self.folder_path):
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
+                image = Image.open(os.path.join(self.folder_path, filename))
 
-        # Close the root window
-        root.destroy()
+                # Calculate the new thumbnail size based on the scale factor
+                thumbnail_width = int(image.width * scale_factor)
+                thumbnail_height = int(image.height * scale_factor)
 
-    except Exception as e:
-        print(f"An error occurred for '{image_path}': {e}")
+                # Resize the image
+                image.thumbnail((thumbnail_width, thumbnail_height))
 
-# Define the interactive image selection and processing function
-def select_and_process_image():
-    root = tk.Tk()
-    root.title("Image Selector")
+                photo = ImageTk.PhotoImage(image)
+                self.images.append(filename)
+                self.image_canvas.create_image(x, y, image=photo, anchor=tk.NW, tags=(filename,))
+                x += thumbnail_width + 10
+                if x > 800 - thumbnail_width:
+                    x = 10
+                    y += thumbnail_height + 10
 
-    # Set the folder path to the "images" folder in the same directory as the script
-    folder_path = os.path.join(os.path.dirname(__file__), "images")
+                photo.image = photo
 
-    # Set the initial window size
-    root.geometry("800x600")
+        # Bind the canvas to the select_image function
+        self.image_canvas.bind("<Button-1>", self.select_image)
 
-    selected_image_path = None
-    selected_thumbnail = None
-    thumbnail_img = None
-    thumbnail_width = 0
-    thumbnail_height = 0
+    def split_and_save(self):
+        try:
+            # Open the selected image file
+            original_image = Image.open(self.selected_image_path)
 
-    def select_image(event):
-        nonlocal selected_thumbnail, thumbnail_img, thumbnail_width, thumbnail_height, selected_image_path
+            # Get the dimensions of the image
+            width, height = original_image.size
+
+            # Calculate half-width and half-height
+            half_width, half_height = width // 2, height // 2
+
+            # Define the quadrant coordinates
+            quadrants = [
+                (0, 0, half_width, half_height),
+                (half_width, 0, width, half_height),
+                (0, half_height, half_width, height),
+                (half_width, half_height, width, height),
+            ]
+
+            # Create the "output" directory if it doesn't exist
+            os.makedirs(output_folder, exist_ok=True)
+
+            # Get the filename without extension
+            filename_without_extension = os.path.splitext(os.path.basename(self.selected_image_path))[0]
+
+            # Split and save each quadrant
+            for i, quadrant_coords in enumerate(quadrants):
+                quadrant_image = original_image.crop(quadrant_coords)
+                output_filename = f"{filename_without_extension}_quadrant_{i + 1}.png"
+                output_path = os.path.join(output_folder, output_filename)
+                quadrant_image.save(output_path, "PNG")
+
+            print(f"Image '{self.selected_image_path}' split successfully!")
+
+            # Close the root window
+            self.root.destroy()
+
+        except Exception as e:
+            print(f"An error occurred for '{self.selected_image_path}': {e}")
+
+    def select_image(self, event):
         # Get the closest item (image) to the click event
-        closest_item = image_canvas.find_closest(event.x, event.y)
+        closest_item = self.image_canvas.find_closest(event.x, event.y)
         if closest_item:
-            selected_index = images.index(image_canvas.gettags(closest_item)[0])
-            selected_image = images[selected_index]
+            selected_index = self.images.index(self.image_canvas.gettags(closest_item)[0])
+            selected_image = self.images[selected_index]
 
-            if selected_thumbnail == closest_item:
+            if self.selected_thumbnail == closest_item:
                 # Deselect and unhighlight if the same thumbnail is clicked again
-                selected_thumbnail = None
-                thumbnail_img = None
-                thumbnail_width = 0
-                thumbnail_height = 0
-                selected_image_path = None
-                image_canvas.delete("highlight")
+                self.selected_thumbnail = None
+                self.thumbnail_img = None
+                self.thumbnail_width = 0
+                self.thumbnail_height = 0
+                self.selected_image_path = None
+                self.image_canvas.delete("highlight")
                 return
 
-            selected_image_path = os.path.join(folder_path, selected_image)
-            thumbnail_img = Image.open(selected_image_path)
+            self.selected_image_path = os.path.join(self.folder_path, selected_image)
+            self.thumbnail_img = Image.open(self.selected_image_path)
 
             # Calculate the new thumbnail size based on the scale factor
-            thumbnail_width = int(thumbnail_img.width * scale_factor)
-            thumbnail_height = int(thumbnail_img.height * scale_factor)
+            self.thumbnail_width = int(self.thumbnail_img.width * scale_factor)
+            self.thumbnail_height = int(self.thumbnail_img.height * scale_factor)
 
-            selected_thumbnail = closest_item
-            highlight_selected_image()
+            self.selected_thumbnail = closest_item
+            self.highlight_selected_image()
 
-    def highlight_selected_image():
+    def highlight_selected_image(self):
         # Clear any existing highlights
-        image_canvas.delete("highlight")
+        self.image_canvas.delete("highlight")
 
         # Get the coordinates of the selected thumbnail
-        x1, y1 = image_canvas.coords(selected_thumbnail)
+        x1, y1 = self.image_canvas.coords(self.selected_thumbnail)
 
         # Calculate the coordinates for the highlight rectangle
-        x2 = x1 + thumbnail_width
-        y2 = y1 + thumbnail_height
+        x2 = x1 + self.thumbnail_width
+        y2 = y1 + self.thumbnail_height
 
         # Highlight the selected image by drawing a rectangle around it
-        image_canvas.create_rectangle(
+        self.image_canvas.create_rectangle(
             x1, y1, x2, y2,
             outline="blue", width=2, tags="highlight"
         )
 
         # Create a "Split" button below the selected image
-        split_button = tk.Button(root, text="Split", command=lambda: split_and_save(selected_image_path, "output", root))
+        split_button = tk.Button(self.root, text="Split", command=self.split_and_save)
         split_button.place(x=x1, y=y2 + 10)
 
-    # Create a canvas to display image thumbnails
-    image_canvas = tk.Canvas(root, width=800, height=600)
-    image_canvas.pack()
-
-    images = []
-
-    x = 10
-    y = 10
-
-    num_columns = 6  # Number of columns for thumbnail layout
-
-    for filename in os.listdir(folder_path):
-        if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
-            image = Image.open(os.path.join(folder_path, filename))
-
-            # Calculate the new thumbnail size based on the scale factor
-            thumbnail_width = int(image.width * scale_factor)
-            thumbnail_height = int(image.height * scale_factor)
-
-            # Resize the image
-            image.thumbnail((thumbnail_width, thumbnail_height))
-
-            photo = ImageTk.PhotoImage(image)
-            images.append(filename)
-            image_canvas.create_image(x, y, image=photo, anchor=tk.NW, tags=(filename,))
-            x += thumbnail_width + 10
-            if x > 800 - thumbnail_width:
-                x = 10
-                y += thumbnail_height + 10
-
-            photo.image = photo
-
-    # Bind the canvas to the select_image function
-    image_canvas.bind("<Button-1>", select_image)
-
-    root.mainloop()
-
 if __name__ == "__main__":
+    scale_factor = 0.1  # 10%
     input_folder = "images"
     output_folder = "output"
 
-    # Call the interactive mode to select and process an image
-    select_and_process_image()
+    root = tk.Tk()
+    app = ImageSplitterApp(root)
+
+    root.mainloop()
