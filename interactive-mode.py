@@ -58,8 +58,13 @@ def select_and_process_image():
     root.geometry("800x600")
 
     selected_image_path = None
+    selected_thumbnail = None
+    thumbnail_img = None
+    thumbnail_width = 0
+    thumbnail_height = 0
 
     def select_image(event):
+        nonlocal selected_thumbnail, thumbnail_img, thumbnail_width, thumbnail_height
         # Get the closest item (image) to the click event
         closest_item = image_canvas.find_closest(event.x, event.y)
         if closest_item:
@@ -67,23 +72,35 @@ def select_and_process_image():
             selected_image = images[selected_index]
             nonlocal selected_image_path
             selected_image_path = os.path.join(folder_path, selected_image)
-            highlight_selected_image(selected_index)
+            thumbnail_img = Image.open(selected_image_path)
 
-    def highlight_selected_image(selected_index):
+            # Calculate the new thumbnail size based on the scale factor
+            thumbnail_width = int(thumbnail_img.width * scale_factor)
+            thumbnail_height = int(thumbnail_img.height * scale_factor)
+
+            selected_thumbnail = closest_item
+            highlight_selected_image()
+
+    def highlight_selected_image():
         # Clear any existing highlights
         image_canvas.delete("highlight")
 
+        # Get the coordinates of the selected thumbnail
+        x1, y1 = image_canvas.coords(selected_thumbnail)
+
+        # Calculate the coordinates for the highlight rectangle
+        x2 = x1 + thumbnail_width
+        y2 = y1 + thumbnail_height
+
         # Highlight the selected image by drawing a rectangle around it
-        x = (selected_index % num_columns) * (thumbnail_width + 10)
-        y = (selected_index // num_columns) * (thumbnail_height + 10)
         image_canvas.create_rectangle(
-            x, y, x + thumbnail_width, y + thumbnail_height,
+            x1, y1, x2, y2,
             outline="blue", width=2, tags="highlight"
         )
 
         # Create a "Split" button below the selected image
         split_button = tk.Button(root, text="Split", command=lambda: split_and_save(selected_image_path, "output", root))
-        split_button.place(x=x, y=y + thumbnail_height + 10)
+        split_button.place(x=x1, y=y2 + 10)
 
     # Create a canvas to display image thumbnails
     image_canvas = tk.Canvas(root, width=800, height=600)
