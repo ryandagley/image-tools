@@ -64,6 +64,10 @@ class ImageSplitterApp:
         cancel_button = tk.Button(self.bottom_bar, text="Cancel", command=self.root.destroy)
         cancel_button.pack(side=tk.BOTTOM, pady=10)
 
+        # Create a "Split" button on the bottom bar
+        split_button = tk.Button(self.bottom_bar, text="Split", command=self.split_and_save)
+        split_button.pack(side=tk.RIGHT, padx=10, pady=10)
+
     def split_and_save(self):
         try:
             # Open the selected image file
