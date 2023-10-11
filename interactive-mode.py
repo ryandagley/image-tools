@@ -13,11 +13,7 @@ class ImageSplitterApp:
         # Set the initial window size
         self.root.geometry("1000x800")
 
-        self.selected_image_path = None
-        self.selected_thumbnail = None
-        self.thumbnail_img = None
-        self.thumbnail_width = 0
-        self.thumbnail_height = 0
+        self.selected_indices = []  # Store selected indices
 
         self.create_widgets()
 
@@ -48,8 +44,8 @@ class ImageSplitterApp:
                 image.thumbnail((thumbnail_width, thumbnail_height))
 
                 photo = ImageTk.PhotoImage(image)
-                self.images.append(filename)
-                self.image_canvas.create_image(x, y, image=photo, anchor=tk.NW, tags=(filename,))
+                self.images.append((filename, thumbnail_width, thumbnail_height))
+                thumbnail_item = self.image_canvas.create_image(x, y, image=photo, anchor=tk.NW, tags=(filename,))
                 x += thumbnail_width + 10
                 if x > 800 - thumbnail_width:
                     x = 10
@@ -57,12 +53,12 @@ class ImageSplitterApp:
 
                 photo.image = photo
 
-        # Bind the canvas to the select_image function
-        self.image_canvas.bind("<Button-1>", self.select_image)
+                # Bind the canvas to the select_image function for each thumbnail item
+                self.image_canvas.tag_bind(thumbnail_item, "<Button-1>", lambda event, item=thumbnail_item, index=len(self.images) - 1: self.select_image(event, item, index))
 
         # Create a "Cancel" button at the bottom of the window
         cancel_button = tk.Button(self.bottom_bar, text="Cancel", command=self.root.destroy)
-        cancel_button.pack(side=tk.BOTTOM, pady=10)
+        cancel_button.pack(side=tk.LEFT, pady=10)
 
         # Create a "Split" button on the bottom bar
         split_button = tk.Button(self.bottom_bar, text="Split", command=self.split_and_save)
@@ -70,91 +66,77 @@ class ImageSplitterApp:
 
     def split_and_save(self):
         try:
-            # Open the selected image file
-            original_image = Image.open(self.selected_image_path)
+            for selected_index in self.selected_indices:
+                selected_image_info = self.images[selected_index]
+                selected_image_path = os.path.join(self.folder_path, selected_image_info[0])
 
-            # Get the dimensions of the image
-            width, height = original_image.size
+                # Open the selected image file
+                original_image = Image.open(selected_image_path)
 
-            # Calculate half-width and half-height
-            half_width, half_height = width // 2, height // 2
+                # Get the dimensions of the image
+                width, height = original_image.size
 
-            # Define the quadrant coordinates
-            quadrants = [
-                (0, 0, half_width, half_height),
-                (half_width, 0, width, half_height),
-                (0, half_height, half_width, height),
-                (half_width, half_height, width, height),
-            ]
+                # Calculate half-width and half-height
+                half_width, half_height = width // 2, height // 2
 
-            # Create the "output" directory if it doesn't exist
-            os.makedirs(output_folder, exist_ok=True)
+                # Define the quadrant coordinates
+                quadrants = [
+                    (0, 0, half_width, half_height),
+                    (half_width, 0, width, half_height),
+                    (0, half_height, half_width, height),
+                    (half_width, half_height, width, height),
+                ]
 
-            # Get the filename without extension
-            filename_without_extension = os.path.splitext(os.path.basename(self.selected_image_path))[0]
+                # Create the "output" directory if it doesn't exist
+                os.makedirs(output_folder, exist_ok=True)
 
-            # Split and save each quadrant
-            for i, quadrant_coords in enumerate(quadrants):
-                quadrant_image = original_image.crop(quadrant_coords)
-                output_filename = f"{filename_without_extension}_quadrant_{i + 1}.png"
-                output_path = os.path.join(output_folder, output_filename)
-                quadrant_image.save(output_path, "PNG")
+                # Get the filename without extension
+                filename_without_extension = os.path.splitext(selected_image_info[0])[0]
 
-            print(f"Image '{self.selected_image_path}' split successfully!")
+                # Split and save each quadrant
+                for j, quadrant_coords in enumerate(quadrants):
+                    quadrant_image = original_image.crop(quadrant_coords)
+                    output_filename = f"{filename_without_extension}_quadrant_{j + 1}.png"
+                    output_path = os.path.join(output_folder, output_filename)
+                    quadrant_image.save(output_path, "PNG")
 
-            # Close the root window
-            self.root.destroy()
+                print(f"Image '{selected_image_info[0]}' split successfully!")
+
+            # Clear the selected indices and reset the canvas
+            self.selected_indices = []
+            self.image_canvas.delete("highlight")
 
         except Exception as e:
-            print(f"An error occurred for '{self.selected_image_path}': {e}")
+            print(f"An error occurred: {e}")
 
-    def select_image(self, event):
-        # Get the closest item (image) to the click event
-        closest_item = self.image_canvas.find_closest(event.x, event.y)
-        if closest_item:
-            selected_index = self.images.index(self.image_canvas.gettags(closest_item)[0])
-            selected_image = self.images[selected_index]
+    def select_image(self, event, thumbnail_item, index):
+        if index in self.selected_indices:
+            # Deselect and unhighlight if the same thumbnail is clicked again
+            self.selected_indices.remove(index)
+        else:
+            self.selected_indices.append(index)
+        self.highlight_selected_images()
 
-            if self.selected_thumbnail == closest_item:
-                # Deselect and unhighlight if the same thumbnail is clicked again
-                self.selected_thumbnail = None
-                self.thumbnail_img = None
-                self.thumbnail_width = 0
-                self.thumbnail_height = 0
-                self.selected_image_path = None
-                self.image_canvas.delete("highlight")
-                return
-
-            self.selected_image_path = os.path.join(self.folder_path, selected_image)
-            self.thumbnail_img = Image.open(self.selected_image_path)
-
-            # Calculate the new thumbnail size based on the scale factor
-            self.thumbnail_width = int(self.thumbnail_img.width * scale_factor)
-            self.thumbnail_height = int(self.thumbnail_img.height * scale_factor)
-
-            self.selected_thumbnail = closest_item
-            self.highlight_selected_image()
-
-    def highlight_selected_image(self):
+    def highlight_selected_images(self):
         # Clear any existing highlights
         self.image_canvas.delete("highlight")
 
-        # Get the coordinates of the selected thumbnail
-        x1, y1 = self.image_canvas.coords(self.selected_thumbnail)
+        for index in self.selected_indices:
+            selected_image_info = self.images[index]
+            thumbnail_item = self.image_canvas.find_withtag(selected_image_info[0])[0]
 
-        # Calculate the coordinates for the highlight rectangle
-        x2 = x1 + self.thumbnail_width
-        y2 = y1 + self.thumbnail_height
+            # Get the coordinates of the selected thumbnail
+            x1, y1 = self.image_canvas.coords(thumbnail_item)
 
-        # Highlight the selected image by drawing a rectangle around it
-        self.image_canvas.create_rectangle(
-            x1, y1, x2, y2,
-            outline="blue", width=2, tags="highlight"
-        )
+            # Calculate the coordinates for the highlight rectangle
+            x2 = x1 + selected_image_info[1]
+            y2 = y1 + selected_image_info[2]
 
-        # Create a "Split" button below the selected image
-        split_button = tk.Button(self.root, text="Split", command=self.split_and_save)
-        split_button.place(x=x1, y=y2 + 10)
+            # Highlight the selected image by drawing a rectangle around it
+            self.image_canvas.create_rectangle(
+                x1, y1, x2, y2,
+                outline="blue", width=2, tags="highlight"
+            )
 
 if __name__ == "__main__":
     scale_factor = 0.1  # 10%
