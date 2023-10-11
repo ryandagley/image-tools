@@ -22,6 +22,10 @@ class ImageSplitterApp:
         self.create_widgets()
 
     def create_widgets(self):
+        # Create a frame at the bottom for a bar
+        self.bottom_bar = tk.Frame(self.root)
+        self.bottom_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
         self.image_canvas = tk.Canvas(self.root, width=800, height=600)
         self.image_canvas.pack()
 
@@ -57,7 +61,7 @@ class ImageSplitterApp:
         self.image_canvas.bind("<Button-1>", self.select_image)
 
         # Create a "Cancel" button at the bottom of the window
-        cancel_button = tk.Button(self.root, text="Cancel", command=self.root.destroy)
+        cancel_button = tk.Button(self.bottom_bar, text="Cancel", command=self.root.destroy)
         cancel_button.pack(side=tk.BOTTOM, pady=10)
 
     def split_and_save(self):
