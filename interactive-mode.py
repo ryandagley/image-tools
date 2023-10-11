@@ -11,7 +11,7 @@ class ImageSplitterApp:
         self.folder_path = os.path.join(os.path.dirname(__file__), "images")
 
         # Set the initial window size
-        self.root.geometry("800x600")
+        self.root.geometry("1000x800")
 
         self.selected_image_path = None
         self.selected_thumbnail = None
@@ -30,7 +30,7 @@ class ImageSplitterApp:
         x = 10
         y = 10
 
-        num_columns = 6  # Number of columns for thumbnail layout
+        num_columns = 3  # Number of columns for thumbnail layout
 
         for filename in os.listdir(self.folder_path):
             if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
@@ -55,6 +55,10 @@ class ImageSplitterApp:
 
         # Bind the canvas to the select_image function
         self.image_canvas.bind("<Button-1>", self.select_image)
+
+        # Create a "Cancel" button at the bottom of the window
+        cancel_button = tk.Button(self.root, text="Cancel", command=self.root.destroy)
+        cancel_button.pack(side=tk.BOTTOM, pady=10)
 
     def split_and_save(self):
         try:
