@@ -18,43 +18,57 @@ class ImageSplitterApp:
         self.create_widgets()
 
     def create_widgets(self):
+        # Constants
+        scale_factor = 0.11  # 10%
+        num_columns = 3  # Number of columns for thumbnail layout
+
         # Create a frame at the bottom for a bar
         self.bottom_bar = tk.Frame(self.root)
         self.bottom_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.image_canvas = tk.Canvas(self.root, width=800, height=600)
-        self.image_canvas.pack()
+        # Create a canvas to hold the thumbnails and add a vertical scrollbar
+        self.canvas_frame = tk.Frame(self.root)
+        self.canvas_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.image_canvas = tk.Canvas(self.canvas_frame, width=800, height=600)
+        self.image_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.v_scrollbar = tk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL, command=self.image_canvas.yview)
+        self.v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.image_canvas.config(yscrollcommand=self.v_scrollbar.set)
+
+        self.canvas_frame.update_idletasks()
+
+        self.canvas_frame.bind("<Configure>", self.on_canvas_configure)
 
         self.images = []
 
         x = 10
         y = 10
 
-        num_columns = 3  # Number of columns for thumbnail layout
+        for filename in [f for f in os.listdir(self.folder_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp'))]:
+            image = Image.open(os.path.join(self.folder_path, filename))
 
-        for filename in os.listdir(self.folder_path):
-            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
-                image = Image.open(os.path.join(self.folder_path, filename))
+            # Calculate the new thumbnail size based on the scale factor
+            thumbnail_width = int(image.width * scale_factor)
+            thumbnail_height = int(image.height * scale_factor)
 
-                # Calculate the new thumbnail size based on the scale factor
-                thumbnail_width = int(image.width * scale_factor)
-                thumbnail_height = int(image.height * scale_factor)
+            # Resize the image
+            image.thumbnail((thumbnail_width, thumbnail_height))
 
-                # Resize the image
-                image.thumbnail((thumbnail_width, thumbnail_height))
+            photo = ImageTk.PhotoImage(image)
+            self.images.append((filename, thumbnail_width, thumbnail_height))
+            thumbnail_item = self.image_canvas.create_image(x, y, image=photo, anchor=tk.NW, tags=(filename,))
+            x += thumbnail_width + 10
+            if x > 800 - thumbnail_width:
+                x = 10
+                y += thumbnail_height + 10
 
-                photo = ImageTk.PhotoImage(image)
-                self.images.append((filename, thumbnail_width, thumbnail_height))
-                thumbnail_item = self.image_canvas.create_image(x, y, image=photo, anchor=tk.NW, tags=(filename,))
-                x += thumbnail_width + 10
-                if x > 800 - thumbnail_width:
-                    x = 10
-                    y += thumbnail_height + 10
+            photo.image = photo
 
-                photo.image = photo
-
-                # Bind the canvas to the select_image function for each thumbnail item
-                self.image_canvas.tag_bind(thumbnail_item, "<Button-1>", lambda event, item=thumbnail_item, index=len(self.images) - 1: self.select_image(event, item, index))
+            # Bind the canvas to the select_image function for each thumbnail item
+            self.image_canvas.tag_bind(thumbnail_item, "<Button-1>", self.create_select_image_callback(thumbnail_item))
 
         # Create a "Cancel" button at the bottom of the window
         cancel_button = tk.Button(self.bottom_bar, text="Cancel", command=self.root.destroy)
@@ -63,6 +77,21 @@ class ImageSplitterApp:
         # Create a "Split" button on the bottom bar
         split_button = tk.Button(self.bottom_bar, text="Split", command=self.split_and_save)
         split_button.pack(side=tk.RIGHT, padx=10, pady=10)
+
+    def on_canvas_configure(self, event):
+        self.image_canvas.configure(scrollregion=self.image_canvas.bbox("all"))
+
+    def create_select_image_callback(self, thumbnail_item):
+        def select_image(event):
+            index = self.images.index(next((item for item in self.images if item[0] == self.image_canvas.gettags(thumbnail_item)[0]), None))
+            if index is not None:
+                if index in self.selected_indices:
+                    # Deselect and unhighlight if the same thumbnail is clicked again
+                    self.selected_indices.remove(index)
+                else:
+                    self.selected_indices.append(index)
+                self.highlight_selected_images()
+        return select_image
 
     def split_and_save(self):
         try:
@@ -88,6 +117,7 @@ class ImageSplitterApp:
                 ]
 
                 # Create the "output" directory if it doesn't exist
+                output_folder = "output"
                 os.makedirs(output_folder, exist_ok=True)
 
                 # Get the filename without extension
@@ -108,14 +138,6 @@ class ImageSplitterApp:
 
         except Exception as e:
             print(f"An error occurred: {e}")
-
-    def select_image(self, event, thumbnail_item, index):
-        if index in self.selected_indices:
-            # Deselect and unhighlight if the same thumbnail is clicked again
-            self.selected_indices.remove(index)
-        else:
-            self.selected_indices.append(index)
-        self.highlight_selected_images()
 
     def highlight_selected_images(self):
         # Clear any existing highlights
@@ -139,10 +161,6 @@ class ImageSplitterApp:
             )
 
 if __name__ == "__main__":
-    scale_factor = 0.1  # 10%
-    input_folder = "images"
-    output_folder = "output"
-
     root = tk.Tk()
     app = ImageSplitterApp(root)
 
