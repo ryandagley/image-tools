@@ -70,13 +70,21 @@ class ImageSplitterApp:
             # Bind the canvas to the select_image function for each thumbnail item
             self.image_canvas.tag_bind(thumbnail_item, "<Button-1>", self.create_select_image_callback(thumbnail_item))
 
-        # Create a "Cancel" button at the bottom of the window
-        cancel_button = tk.Button(self.bottom_bar, text="Cancel", command=self.root.destroy)
-        cancel_button.pack(side=tk.LEFT, pady=10)
+        # Create a frame for buttons at the bottom of the window
+        button_frame = tk.Frame(self.bottom_bar)
+        button_frame.pack(side=tk.RIGHT, pady=10)
 
-        # Create a "Split" button on the bottom bar
-        split_button = tk.Button(self.bottom_bar, text="Split", command=self.split_and_save)
-        split_button.pack(side=tk.RIGHT, padx=10, pady=10)
+        # Create a "Deselect All" button
+        deselect_all_button = tk.Button(button_frame, text="Deselect All", command=self.deselect_all)
+        deselect_all_button.pack(side=tk.LEFT, padx=10)
+
+        # Create a "Cancel" button
+        cancel_button = tk.Button(button_frame, text="Cancel", command=self.root.destroy)
+        cancel_button.pack(side=tk.LEFT, padx=10)
+
+        # Create a "Split" button
+        split_button = tk.Button(button_frame, text="Split", command=self.split_and_save)
+        split_button.pack(side=tk.RIGHT, padx=10)
 
     def on_canvas_configure(self, event):
         self.image_canvas.configure(scrollregion=self.image_canvas.bbox("all"))
@@ -92,6 +100,11 @@ class ImageSplitterApp:
                     self.selected_indices.append(index)
                 self.highlight_selected_images()
         return select_image
+
+    def deselect_all(self):
+        # Deselect all thumbnails and clear highlights
+        self.selected_indices = []
+        self.highlight_selected_images()
 
     def split_and_save(self):
         try:
