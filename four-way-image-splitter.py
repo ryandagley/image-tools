@@ -1,7 +1,10 @@
 from PIL import Image
 import os
 
-def split_and_save(image_path, output_folder):
+def generate_quadrant_names():
+    return ["top_left", "top_right", "bottom_left", "bottom_right"]
+
+def split_and_save(image_path, output_folder, quadrant_names):
     try:
         # Open the image file
         original_image = Image.open(image_path)
@@ -29,7 +32,7 @@ def split_and_save(image_path, output_folder):
         # Split and save each quadrant
         for i, quadrant_coords in enumerate(quadrants):
             quadrant_image = original_image.crop(quadrant_coords)
-            output_filename = f"{filename_without_extension}_quadrant_{i + 1}.png"
+            output_filename = f"{filename_without_extension}_{quadrant_names[i]}.png"
             output_path = os.path.join(output_folder, output_filename)
             quadrant_image.save(output_path, "PNG")
         
@@ -45,7 +48,10 @@ if __name__ == "__main__":
     # List all files in the input folder
     image_files = os.listdir(input_folder)
 
+    # Generate quadrant names
+    quadrant_names = generate_quadrant_names()
+
     # Process each image file in the input folder
     for image_filename in image_files:
         image_path = os.path.join(input_folder, image_filename)
-        split_and_save(image_path, output_folder)
+        split_and_save(image_path, output_folder, quadrant_names)
