@@ -6,7 +6,7 @@ def generate_quadrant_names():
     return ["tl", "tr", "bl", "br"]
 
 
-def split_and_save(image_path, output_folder, quadrant_names):
+def split_and_save(image_path, output_folder, quadrant_names, input_image_index):
     try:
         original_image = Image.open(image_path)
         width, height = original_image.size
@@ -25,7 +25,7 @@ def split_and_save(image_path, output_folder, quadrant_names):
 
         for i, quadrant_coords in enumerate(quadrants):
             quadrant_image = original_image.crop(quadrant_coords)
-            output_filename = f"{filename_without_extension[:10]}_{quadrant_names[i]}.png"
+            output_filename = f"{filename_without_extension[:10]}_{input_image_index + 1}_{quadrant_names[i]}.png"
             output_path = os.path.join(output_folder, output_filename)
             quadrant_image.save(output_path, "PNG")
 
@@ -41,6 +41,7 @@ if __name__ == "__main__":
     image_files = os.listdir(input_folder)
     quadrant_names = generate_quadrant_names()
 
-    for image_filename in image_files:
+    for input_image_index, image_filename in enumerate(image_files):
         image_path = os.path.join(input_folder, image_filename)
-        split_and_save(image_path, output_folder, quadrant_names)
+        split_and_save(image_path, output_folder,
+                       quadrant_names, input_image_index)
