@@ -1,9 +1,17 @@
 from PIL import Image
 import os
+import datetime  # Import the datetime module
 
 
 def generate_quadrant_names():
     return ["tl", "tr", "bl", "br"]
+
+
+def get_current_date_folder():
+    # Get the current date in the format '6_NOV_2023'
+    current_date = datetime.datetime.now().strftime('%d_%b_%Y')
+    # Create the folder path
+    return os.path.join("output", current_date + "_splits")
 
 
 def split_and_save(image_path, output_folder, quadrant_names, input_image_index):
@@ -37,11 +45,11 @@ def split_and_save(image_path, output_folder, quadrant_names, input_image_index)
 
 if __name__ == "__main__":
     input_folder = "images"
-    output_folder = "output"
     image_files = os.listdir(input_folder)
     quadrant_names = generate_quadrant_names()
 
     for input_image_index, image_filename in enumerate(image_files):
         image_path = os.path.join(input_folder, image_filename)
+        output_folder = get_current_date_folder()  # Get the current date folder
         split_and_save(image_path, output_folder,
                        quadrant_names, input_image_index)
