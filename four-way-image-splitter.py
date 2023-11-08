@@ -1,6 +1,7 @@
 from PIL import Image
 import os
-import datetime  # Import the datetime module
+import datetime
+import argparse
 
 
 def generate_quadrant_names():
@@ -8,13 +9,11 @@ def generate_quadrant_names():
 
 
 def get_current_date_folder():
-    # Get the current date in the format '6_NOV_2023'
     current_date = datetime.datetime.now().strftime('%d_%b_%Y')
-    # Create the folder path
     return os.path.join("output", current_date + "_splits")
 
 
-def split_and_save(image_path, output_folder, quadrant_names, input_image_index):
+def split_and_save(image_path, output_folder, quadrant_names, input_image_index, prefix=None):
     try:
         original_image = Image.open(image_path)
         width, height = original_image.size
@@ -33,7 +32,10 @@ def split_and_save(image_path, output_folder, quadrant_names, input_image_index)
 
         for i, quadrant_coords in enumerate(quadrants):
             quadrant_image = original_image.crop(quadrant_coords)
-            output_filename = f"{filename_without_extension[:10]}_{input_image_index + 1}_{quadrant_names[i]}.png"
+            if prefix:
+                output_filename = f"{prefix}_{filename_without_extension[:10]}_{input_image_index + 1}_{quadrant_names[i]}.png"
+            else:
+                output_filename = f"{filename_without_extension[:10]}_{input_image_index + 1}_{quadrant_names[i]}.png"
             output_path = os.path.join(output_folder, output_filename)
             quadrant_image.save(output_path, "PNG")
 
@@ -44,12 +46,17 @@ def split_and_save(image_path, output_folder, quadrant_names, input_image_index)
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Split and save images.')
+    parser.add_argument(
+        '--name', help='Prefix for output filenames', default=None)
+    args = parser.parse_args()
+
     input_folder = "images"
     image_files = os.listdir(input_folder)
     quadrant_names = generate_quadrant_names()
 
     for input_image_index, image_filename in enumerate(image_files):
         image_path = os.path.join(input_folder, image_filename)
-        output_folder = get_current_date_folder()  # Get the current date folder
-        split_and_save(image_path, output_folder,
-                       quadrant_names, input_image_index)
+        output_folder = get_current_date_folder()
+        split_and_save(image_path, output_folder, quadrant_names,
+                       input_image_index, args.name)
