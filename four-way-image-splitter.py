@@ -2,6 +2,7 @@ from PIL import Image
 import os
 import datetime
 import argparse
+import shutil
 
 
 def generate_quadrant_names():
@@ -40,6 +41,15 @@ def split_and_save(image_path, output_folder, quadrant_names, input_image_index,
             quadrant_image.save(output_path, "PNG")
 
         print(f"Image '{image_path}' split successfully!")
+
+        # Move the source image to the archive folder in the project directory
+        archive_folder = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), "archive")
+        os.makedirs(archive_folder, exist_ok=True)
+        archive_path = os.path.join(
+            archive_folder, os.path.basename(image_path))
+        shutil.move(image_path, archive_path)
+        print(f"Source image '{image_path}' moved to archive folder!")
 
     except Exception as e:
         print(f"An error occurred for '{image_path}': {e}")
