@@ -37,11 +37,8 @@ class ImageSplitter:
                 (half_width, half_height, width, height),
             ]
 
-            # Get the current date folder
-            current_date_folder = self.get_current_date_folder()
-
             # Create the output folder if it doesn't exist
-            os.makedirs(current_date_folder, exist_ok=True)
+            os.makedirs(self.output_folder, exist_ok=True)
             filename_without_extension = os.path.splitext(
                 os.path.basename(image_path))[0]
 
@@ -52,20 +49,23 @@ class ImageSplitter:
                     output_filename = f"{self.prefix}_{filename_without_extension[:10]}_{input_image_index + 1}_{self.quadrant_names[i]}.png"
                 else:
                     output_filename = f"{filename_without_extension[:10]}_{input_image_index + 1}_{self.quadrant_names[i]}.png"
-                output_path = os.path.join(
-                    current_date_folder, output_filename)
+                output_path = os.path.join(self.output_folder, output_filename)
                 quadrant_image.save(output_path, "PNG")
 
             print(f"Image '{image_path}' split successfully!")
 
-            # Move the source image to the archive folder in the project directory
-            archive_folder = os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "archive")
-            os.makedirs(archive_folder, exist_ok=True)
-            archive_path = os.path.join(
-                archive_folder, os.path.basename(image_path))
-            shutil.move(image_path, archive_path)
-            print(f"Source image '{image_path}' moved to archive folder!")
+            # Prompt the user if they want to archive the source image
+            archive_choice = input(
+                "Do you want to archive the source image? (yes/no): ").strip().lower()
+            if archive_choice == "yes":
+                # Move the source image to the archive folder in the project directory
+                archive_folder = os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)), "archive")
+                os.makedirs(archive_folder, exist_ok=True)
+                archive_path = os.path.join(
+                    archive_folder, os.path.basename(image_path))
+                shutil.move(image_path, archive_path)
+                print(f"Source image '{image_path}' moved to archive folder!")
 
         except Exception as e:
             print(f"An error occurred for '{image_path}': {e}")
