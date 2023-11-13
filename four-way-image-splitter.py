@@ -16,8 +16,12 @@ class ImageSplitter:
         return self.quadrant_names
 
     def get_current_date_folder(self):
-        current_date = datetime.datetime.now().strftime('%d%b%y').upper()
-        return os.path.join(self.output_folder, current_date)
+        current_date = datetime.datetime.now().strftime('%d_%b_%y').upper()
+        output_dir = os.path.join(
+            "output", current_date + '_splits')
+        # Create the folder if it doesn't exist
+        os.makedirs(output_dir, exist_ok=False)
+        # return output_dir
 
     def split_and_save(self, image_path, input_image_index):
         try:
