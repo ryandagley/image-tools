@@ -17,11 +17,11 @@ class ImageSplitter:
 
     def get_current_date_folder(self):
         current_date = datetime.datetime.now().strftime('%d_%b_%y').upper()
-        output_dir = os.path.join(
+        output_folder = os.path.join(
             "output", current_date + '_splits')
         # Create the folder if it doesn't exist
-        os.makedirs(output_dir, exist_ok=False)
-        # return output_dir
+        os.makedirs(output_folder, exist_ok=True)
+        return output_folder
 
     def split_and_save(self, image_path, input_image_index):
         try:
@@ -81,8 +81,9 @@ if __name__ == "__main__":
 
     input_folder = "images"
     project_directory = os.path.dirname(os.path.realpath(__file__))
+    current_date = datetime.datetime.now().strftime('%d_%b_%y').upper()
     output_folder = os.path.join(
-        project_directory, datetime.datetime.now().strftime('%d%b%y').upper())
+        "output", current_date + '_splits')
     image_files = os.listdir(input_folder)
 
     image_splitter = ImageSplitter(input_folder, output_folder, args.name)
