@@ -6,19 +6,19 @@ import shutil
 
 
 class ImageSplitter:
-    def __init__(self, input_folder, output_folder, prefix=None):
+    def __init__(self, input_folder, output_folder=None, prefix=None):
         self.input_folder = input_folder
-        self.output_folder = output_folder
         self.prefix = prefix
         self.quadrant_names = ["tl", "tr", "bl", "br"]
+        self.output_folder = self.get_current_date_folder(output_folder)
 
     def generate_quadrant_names(self):
         return self.quadrant_names
 
-    def get_current_date_folder(self):
-        current_date = datetime.datetime.now().strftime('%d_%b_%y').upper()
-        output_folder = os.path.join(
-            "output", current_date + '_splits')
+    def get_current_date_folder(self, output_folder):
+        if output_folder is None:
+            output_folder = os.path.join(
+                "output", datetime.datetime.now().strftime('%d_%b_%y').upper() + '_splits')
         # Create the folder if it doesn't exist
         os.makedirs(output_folder, exist_ok=True)
         return output_folder
@@ -47,7 +47,7 @@ class ImageSplitter:
                 else:
                     output_filename = f"{filename_without_extension}_{input_image_index + 1}_{self.quadrant_names[i]}.png"
                 output_path = os.path.join(
-                    self.get_current_date_folder(), output_filename)
+                    self.output_folder, output_filename)
                 quadrant_image.save(output_path, "PNG")
 
             print(f"Image '{image_path}' split successfully!")
@@ -77,16 +77,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Split and save images.')
     parser.add_argument(
         '--name', help='Prefix for output filenames', default=None)
+    parser.add_argument(
+        '--output', help='Output folder', default=None)
     args = parser.parse_args()
 
     input_folder = "images"
     project_directory = os.path.dirname(os.path.realpath(__file__))
-    current_date = datetime.datetime.now().strftime('%d_%b_%y').upper()
-    output_folder = os.path.join(
-        "output", current_date + '_splits')
     image_files = os.listdir(input_folder)
 
-    image_splitter = ImageSplitter(input_folder, output_folder, args.name)
+    image_splitter = ImageSplitter(input_folder, args.output, args.name)
 
     for input_image_index, image_filename in enumerate(image_files):
         image_path = os.path.join(input_folder, image_filename)
